@@ -211,4 +211,4 @@ proof85 : {P : Set} → (⊤ → ⊥) → ⊥
 proof85 f = f tt
 
 proof9 : {P : Set} → (Either P (P → ⊥) → ⊥) → ⊥
-proof9 f = {! f (right (λ x → x x)) !} 
+proof9 f = f (right (λ p → f (left p))) 

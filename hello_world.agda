@@ -176,3 +176,39 @@ cases (right x) l r = r x
 
 data ⊤ : Set where
     tt : ⊤
+
+data ⊥ : Set where
+
+absurd : {A : Set} → ⊥ → A
+absurd ()
+
+proof1 : {P : Set} → P → P
+proof1 p = p
+
+proof2 : {P Q R : Set} → (P → Q) × (Q → R) → (P → R)
+proof2 (f , g) = λ x → g (f x)
+
+proof3 : {P Q R : Set} → (Either P Q → R) → (P → R) × (Q → R)
+proof3 f = (λ x → f (left x)) , (λ y → f (right y))
+
+proof4 : {A B : Set} → A → (B → A)
+proof4 x = λ _ → x
+
+proof5 : {A : Set} → A × ⊤ → Either A ⊥
+proof5 (x , tt) = left x
+
+proof6 : {A B C : Set} → (A → B → C) → ((A × B) → C)
+proof6 f (x , y) = (f x) y 
+
+proof7 : {A B C : Set} → (A × (Either B C)) → Either (A × B) (A × C)
+proof7 (a , left x) = left (a , x)
+proof7 (a , right x) = right (a , x)
+
+proof8 : {A B C D : Set} → (A → C) × (B → D) → ((A × B) → (C × D))
+proof8 (ac , bd) (x , y) = (ac x , bd y) 
+  
+proof85 : {P : Set} → (⊤ → ⊥) → ⊥
+proof85 f = f tt
+
+proof9 : {P : Set} → (Either P (P → ⊥) → ⊥) → ⊥
+proof9 f = {! f (right (λ x → x x)) !} 

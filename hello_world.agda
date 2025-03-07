@@ -6,7 +6,7 @@ data Nat : Set where
     
 _+_ : Nat → Nat → Nat
 zero + y = y
-(suc x) + y = x + (suc y)
+(suc x) + y = suc (x + y)
 
 halve : Nat → Nat
 halve (suc(suc x)) = (suc zero) + (halve x)
@@ -81,3 +81,98 @@ lookup [] x = nothing
 lookup (x :: xs) zero = just x
 lookup (x :: xs) (suc v) = lookup xs v
 
+data Vec (A : Set) : Nat → Set where
+    [] : Vec A 0
+    _::_ : {n : Nat} → A → Vec A n → Vec A (suc n)
+
+
+myVec1 : Vec Nat 5
+myVec1  = 1 :: 2 :: 3 :: 4 :: 5 :: []
+
+zeroes : (n : Nat) → Vec Nat n
+zeroes zero = []
+zeroes (suc n) = 0 :: (zeroes n)
+
+downFrom : (n : Nat) → Vec Nat n
+downFrom zero = []
+downFrom (suc n) = n :: (downFrom n)
+
+prepend : {n : Nat} → Bool → Vec Bool n → Vec Bool (suc n)
+prepend b s = b :: s
+
+_++Vec_ : {A : Set} {m n : Nat} → Vec A n → Vec A m → Vec A (n + m)
+[] ++Vec ys = ys
+(x :: xs) ++Vec ys = x :: (xs ++Vec ys)
+
+head : {A : Set} {n : Nat} → Vec A (suc n) → A
+head (x :: xs) = x
+
+tail : {A : Set} {n : Nat} → Vec A (suc n) → Vec A n
+tail (x :: xs) = xs
+
+dotProduct : {n : Nat} → Vec Nat n → Vec Nat n → Nat
+dotProduct [] [] = 0
+dotProduct (x :: xs) (y :: ys) = (x * y) + dotProduct xs ys
+
+data Fin : Nat → Set where
+    zero : {n : Nat} → Fin (suc n)
+    suc  : {n : Nat} → Fin n → Fin (suc n)
+
+zero3 : Fin 3
+zero3 = zero
+
+lookupVec : {A : Set} {n : Nat} → Vec A n → Fin n → A
+lookupVec (x :: xs) zero = x
+lookupVec (x :: xs) (suc i) = lookupVec xs i
+
+putVec : {A : Set} {n : Nat} → Fin n → A → Vec A n → Vec A n
+putVec zero v (x :: xs) = v :: xs
+putVec (suc i) v (x :: xs) = x :: putVec i v xs
+
+data Σ (A : Set) (B : A → Set) : Set where
+    _,_ : (x : A) → B x → Σ A B
+
+_×'_ : (A B : Set) → Set
+A ×' B = Σ A (λ _ → B)
+
+pairToΣ : {A B : Set} → (A × B) → (A ×' B)
+pairToΣ (x , y) = x , y
+
+ΣToPair : {A B : Set} → (A ×' B) → (A × B)
+ΣToPair (x , y) = x , y 
+
+fstΣ : {A : Set} {B : A → Set} → Σ A B → A
+fstΣ (x , y) = x
+
+sndΣ : {A : Set} {B : A → Set} → (z : Σ A B) → B (fstΣ z)
+sndΣ (x , y) = y
+
+List' : (A : Set) → Set
+List' A = Σ Nat (Vec A)
+
+[]' : {A : Set} → List' A
+[]' = 0 , []
+
+_::'_ : {A : Set} → A → List' A → List' A
+x ::' ys = suc (fstΣ ys) , (x :: (sndΣ ys))
+infixr 5 _::'_
+
+ListToList' : {A : Set} → List A → List' A
+ListToList' [] = []'
+ListToList' (x :: xs) = x ::' (ListToList' xs)
+
+List'ToList : {A : Set} → List' A → List A
+-- List'ToList (n , xs) = vecToList xs
+List'ToList (0 , []) = []
+List'ToList (suc n , x :: xs) = x :: List'ToList (n , xs)
+
+data Either (A : Set) (B : Set) : Set where
+    left : A → Either A B
+    right : B → Either A B
+
+cases : {A B C : Set} → Either A B → (A → C) → (B → C) → C
+cases (left x) l r = l x 
+cases (right x) l r = r x
+
+data ⊤ : Set where
+    tt : ⊤

@@ -446,6 +446,41 @@ replicate-length-check (suc n) x =
         1 + n
     end
 
+append-assoc : {A : Set} → (xs ys zs : List A)
+    → (xs ++ ys) ++ zs ≡ xs ++ (ys ++ zs)
+append-assoc [] ys zs =
+    begin
+        ([] ++ ys) ++ zs
+    =⟨⟩
+        [] ++ (ys ++ zs)
+    end
+append-assoc (x :: xs) ys zs =
+    begin
+        ((x :: xs) ++ ys) ++ zs
+    =⟨⟩
+        x :: (xs ++ ys) ++ zs
+    =⟨ cong (λ y → x :: y) (append-assoc xs ys zs) ⟩
+        x :: xs ++ (ys ++ zs)
+    =⟨⟩
+        (x :: xs) ++ (ys ++ zs)
+    end
+
+append-[] : {A : Set} → (xs : List A) → xs ++ [] ≡ xs
+append-[] [] =
+    begin
+        [] ++ []
+    =⟨⟩
+        []
+    end 
+append-[] (x :: xs) =
+    begin
+        (x :: xs) ++ []
+    =⟨⟩
+        x :: (xs ++ [])
+    =⟨ cong (λ y → (x :: y)) (append-[] xs) ⟩
+        (x :: xs)
+    end
+
 reverse-reverse : {A : Set} → (xs : List A) → reverse (reverse xs) ≡ xs
 reverse-reverse [] =
     begin
@@ -482,22 +517,6 @@ reverse-reverse (x :: xs) =
             =⟨⟩ -- unapplying reverse
                 reverse ys ++ reverse []
             end
-            where
-                append-[] : {A : Set} → (xs : List A) → xs ++ [] ≡ xs
-                append-[] [] =
-                    begin
-                        [] ++ []
-                    =⟨⟩
-                        []
-                    end 
-                append-[] (x :: xs) =
-                    begin
-                        (x :: xs) ++ []
-                    =⟨⟩
-                        x :: (xs ++ [])
-                    =⟨ cong (λ y → (x :: y)) (append-[] xs) ⟩
-                        (x :: xs)
-                    end
         reverse-distributivity (x :: xs) ys =
             begin
                 reverse ((x :: xs) ++ ys)
@@ -514,25 +533,6 @@ reverse-reverse (x :: xs) =
             =⟨⟩ -- unapplying inner ++
                 reverse ys ++ (reverse (x :: xs))
             end
-            where
-                append-assoc : {A : Set} → (xs ys zs : List A)
-                    → (xs ++ ys) ++ zs ≡ xs ++ (ys ++ zs)
-                append-assoc [] ys zs =
-                    begin
-                        ([] ++ ys) ++ zs
-                    =⟨⟩
-                        [] ++ (ys ++ zs)
-                    end
-                append-assoc (x :: xs) ys zs =
-                    begin
-                        ((x :: xs) ++ ys) ++ zs
-                    =⟨⟩
-                        x :: (xs ++ ys) ++ zs
-                    =⟨ cong (λ y → x :: y) (append-assoc xs ys zs) ⟩
-                        x :: xs ++ (ys ++ zs)
-                    =⟨⟩
-                        (x :: xs) ++ (ys ++ zs)
-                    end
 
 map-id : {A : Set} (xs : List A) → map id xs ≡ xs
 map-id [] =
@@ -600,3 +600,102 @@ map-length-invariant f (x :: xs) =
         length (x :: xs)
     end
 
+reverse-acc : {A : Set} → List A → List A → List A
+reverse-acc [] ys = ys
+reverse-acc (x :: xs) ys = reverse-acc xs (x :: ys)
+
+reverse’ : {A : Set} → List A → List A
+reverse’ xs = reverse-acc xs []
+
+reverse’-reverse : {A : Set} → (xs : List A) → reverse’ xs ≡ reverse xs
+reverse’-reverse xs =
+    begin
+        reverse’ xs
+    =⟨⟩ -- definition of reverse’
+        reverse-acc xs []
+    =⟨ reverse-acc-lemma xs [] ⟩ -- using reverse-acc-lemma
+        reverse xs ++ []
+    =⟨ append-[] (reverse xs) ⟩ -- using append-[]
+        reverse xs
+    end
+    where
+    reverse-acc-lemma : {A : Set} → (xs ys : List A)
+        → reverse-acc xs ys ≡ reverse xs ++ ys
+    reverse-acc-lemma [] ys =
+        begin
+            reverse-acc [] ys
+        =⟨⟩ -- definition of reverse-acc
+            ys
+        =⟨⟩ -- unapplying ++
+            [] ++ ys
+        =⟨⟩ -- unapplying reverse
+            reverse [] ++ ys
+        end
+    reverse-acc-lemma (x :: xs) ys =
+        begin
+            reverse-acc (x :: xs) ys
+        =⟨⟩ -- definition of reverse-acc
+            reverse-acc xs (x :: ys)
+        =⟨ reverse-acc-lemma xs (x :: ys) ⟩ -- using induction hypothesis
+            reverse xs ++ (x :: ys)
+        =⟨⟩ -- unapplying ++
+            reverse xs ++ ([ x ] ++ ys)
+        =⟨ sym (append-assoc (reverse xs) [ x ] ys) ⟩ -- using associativity of append
+            (reverse xs ++ [ x ]) ++ ys
+        =⟨⟩ -- unapplying reverse
+            reverse (x :: xs) ++ ys
+        end
+
+data Tree (A : Set) : Set where
+    leaf : A → Tree A
+    node : Tree A → Tree A → Tree A
+
+flatten : {A : Set} → Tree A → List A
+flatten (leaf x) = [ x ]
+flatten (node t1 t2) = flatten t1 ++ flatten t2
+flatten-acc : {A : Set} → Tree A → List A → List A
+flatten-acc (leaf x) xs = x :: xs
+flatten-acc (node t1 t2) xs =
+    flatten-acc t1 (flatten-acc t2 xs)
+
+flatten’ : {A : Set} → Tree A → List A
+flatten’ t = flatten-acc t []
+
+flatten-acc-flatten : {A : Set} (t : Tree A) (xs : List A) → flatten-acc t xs ≡ flatten t ++ xs
+flatten-acc-flatten (leaf x) xs =
+    begin
+        flatten-acc (leaf x) xs
+    =⟨⟩ -- definition of flatten-acc
+        x :: xs
+    =⟨⟩ -- unapplying ++
+        [ x ] ++ xs
+    =⟨⟩ -- unapplying flatten
+        flatten (leaf x) ++ xs
+    end
+flatten-acc-flatten (node l r) xs =
+    begin
+        flatten-acc (node l r) xs
+    =⟨⟩ -- applying flatten-acc
+        flatten-acc l (flatten-acc r xs)
+    =⟨ flatten-acc-flatten l (flatten-acc r xs) ⟩ -- using IH for l
+        flatten l ++ (flatten-acc r xs)
+    =⟨ cong (flatten l ++_) (flatten-acc-flatten r xs) ⟩ -- using IH for r
+        flatten l ++ (flatten r ++ xs)
+    =⟨ sym (append-assoc (flatten l) (flatten r) xs) ⟩ -- using append-assoc
+        (flatten l ++ flatten r) ++ xs
+    =⟨⟩ -- unapplying flatten
+        (flatten (node l r)) ++ xs
+    end
+    
+flatten’-flatten : {A : Set} → (t : Tree A) → flatten’ t ≡ flatten t
+flatten’-flatten t = 
+    begin
+        flatten’ t
+    =⟨⟩
+        flatten-acc t []
+    =⟨ flatten-acc-flatten t [] ⟩
+        flatten t ++ []
+    =⟨ append-[] (flatten t) ⟩
+        flatten t
+    end
+ 

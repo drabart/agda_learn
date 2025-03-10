@@ -306,3 +306,297 @@ reverse-singleton x =
         [ x ]
     end
 
+not-not : (b : Bool) → not (not b) ≡ b
+not-not false =
+    begin
+        not (not false)
+    =⟨⟩
+        not true
+    =⟨⟩
+        false
+    end
+not-not true =
+    begin
+        not (not true)
+    =⟨⟩
+        not false
+    =⟨⟩
+        true
+    end
+
+add-n-zero : (n : Nat) → n + zero ≡ n
+add-n-zero zero = 
+    begin
+        zero + zero
+    =⟨⟩ 
+        zero
+    end
+add-n-zero (suc x) = 
+    begin
+        (suc x) + zero
+    =⟨⟩
+        suc (x + zero)
+    =⟨ cong suc (add-n-zero x) ⟩
+        suc x
+    end
+
+add-m-n : (m : Nat) → (n : Nat) → m + (suc n) ≡ suc(m + n)
+add-m-n zero n = 
+    begin
+        zero + suc n
+    =⟨⟩
+        suc n
+    =⟨⟩
+        suc (zero + n)
+    end
+add-m-n (suc m) n = 
+    begin
+        (suc m) + suc n
+    =⟨⟩
+        suc (m + suc n)
+    =⟨ cong suc (add-m-n m n) ⟩
+        suc (suc (m + n))
+    end
+
+mn-equal-nm : (m : Nat) → (n : Nat) → m + n ≡ n + m
+mn-equal-nm zero zero =
+    begin
+        zero + zero
+    =⟨⟩
+        zero + zero
+    end
+mn-equal-nm zero (suc n) =
+    begin
+        zero + (suc n)
+    =⟨⟩
+        suc (zero + n)
+    =⟨ cong suc (mn-equal-nm zero n) ⟩
+        suc (n + zero)
+    =⟨⟩
+        suc n + zero
+    end
+mn-equal-nm (suc m) zero =
+    begin
+        suc m + zero
+    =⟨⟩
+        suc (m + zero)
+    =⟨ cong suc (mn-equal-nm m zero) ⟩
+        suc (zero + m)
+    =⟨⟩
+        zero + suc m
+    end
+mn-equal-nm (suc m) (suc n) =
+    begin
+        suc m + suc n
+    =⟨⟩
+        suc (m + suc n)
+    =⟨ cong suc (add-m-n m n)⟩
+        suc (suc (m + n))
+    =⟨ cong (λ x → suc (suc x)) (mn-equal-nm m n) ⟩ 
+        suc (suc (n + m))
+    =⟨⟩
+        suc (suc n + m)
+    =⟨ cong suc (sym (add-m-n n m)) ⟩
+        suc (n + suc m)
+    =⟨⟩
+        (suc n) + (suc m)
+    end
+
+add-assoc : (x y z : Nat) → x + (y + z) ≡ (x + y) + z
+add-assoc zero y z =
+    begin
+        zero + (y + z)
+    =⟨⟩ -- applying the outer +
+        y + z
+    =⟨⟩ -- unapplying add
+        (zero + y) + z
+    end
+add-assoc (suc x) y z =
+    begin
+        (suc x) + (y + z)
+    =⟨⟩ -- applying the outer add
+        suc (x + (y + z))
+    =⟨ cong suc (add-assoc x y z) ⟩ -- using induction hypothesis
+        suc ((x + y) + z)
+    =⟨⟩ -- unapplying the outer add
+        (suc (x + y)) + z
+    =⟨⟩ -- unapplying the inner add
+        ((suc x) + y) + z
+    end
+
+replicate : {A : Set}
+    → Nat → A → List A
+replicate zero x = []
+replicate (suc n) x =
+    x :: replicate n x
+
+replicate-length-check : {A : Set} → (n : Nat) → (x : A) → (length (replicate n x)) ≡ n
+replicate-length-check zero x =
+    begin
+        length (replicate zero x)
+    =⟨⟩
+        zero
+    end
+replicate-length-check (suc n) x =
+    begin
+        length (replicate (suc n) x)
+    =⟨⟩
+        1 + length (replicate n x)
+    =⟨ cong (λ x → 1 + x) (replicate-length-check n x) ⟩
+        1 + n
+    end
+
+reverse-reverse : {A : Set} → (xs : List A) → reverse (reverse xs) ≡ xs
+reverse-reverse [] =
+    begin
+        reverse (reverse [])
+    =⟨⟩ -- applying inner reverse
+        reverse []
+    =⟨⟩ -- applying reverse
+        []
+    end
+reverse-reverse (x :: xs) =
+    begin
+        reverse (reverse (x :: xs))
+    =⟨⟩ -- applying the inner reverse
+        reverse (reverse xs ++ [ x ])
+    =⟨ reverse-distributivity (reverse xs) [ x ] ⟩ -- distributivity (see below)
+        reverse [ x ] ++ reverse (reverse xs)
+    =⟨⟩ -- reverse singleton list
+        [ x ] ++ reverse (reverse xs)
+    =⟨⟩ -- definition of ++
+        x :: reverse (reverse xs)
+    =⟨ cong (x ::_) (reverse-reverse xs) ⟩ -- using induction hypothesis
+        x :: xs
+    end
+    where
+        reverse-distributivity : {A : Set} → (xs ys : List A)
+            → reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
+        reverse-distributivity [] ys =
+            begin
+                reverse ([] ++ ys)
+            =⟨⟩ -- applying ++
+                reverse ys
+            =⟨ sym (append-[] (reverse ys)) ⟩ -- see append-[] lemma
+                reverse ys ++ []
+            =⟨⟩ -- unapplying reverse
+                reverse ys ++ reverse []
+            end
+            where
+                append-[] : {A : Set} → (xs : List A) → xs ++ [] ≡ xs
+                append-[] [] =
+                    begin
+                        [] ++ []
+                    =⟨⟩
+                        []
+                    end 
+                append-[] (x :: xs) =
+                    begin
+                        (x :: xs) ++ []
+                    =⟨⟩
+                        x :: (xs ++ [])
+                    =⟨ cong (λ y → (x :: y)) (append-[] xs) ⟩
+                        (x :: xs)
+                    end
+        reverse-distributivity (x :: xs) ys =
+            begin
+                reverse ((x :: xs) ++ ys)
+            =⟨⟩ -- applying ++
+                reverse (x :: (xs ++ ys))
+            =⟨⟩ -- applying reverse
+                reverse (xs ++ ys) ++ reverse [ x ]
+            =⟨⟩ -- applying reverse
+                reverse (xs ++ ys) ++ [ x ]
+            =⟨ cong (_++ [ x ]) (reverse-distributivity xs ys) ⟩ -- using induction hypothesis
+                (reverse ys ++ reverse xs) ++ [ x ]
+            =⟨ append-assoc (reverse ys) (reverse xs) [ x ] ⟩ -- using associativity of ++
+                reverse ys ++ (reverse xs ++ [ x ])
+            =⟨⟩ -- unapplying inner ++
+                reverse ys ++ (reverse (x :: xs))
+            end
+            where
+                append-assoc : {A : Set} → (xs ys zs : List A)
+                    → (xs ++ ys) ++ zs ≡ xs ++ (ys ++ zs)
+                append-assoc [] ys zs =
+                    begin
+                        ([] ++ ys) ++ zs
+                    =⟨⟩
+                        [] ++ (ys ++ zs)
+                    end
+                append-assoc (x :: xs) ys zs =
+                    begin
+                        ((x :: xs) ++ ys) ++ zs
+                    =⟨⟩
+                        x :: (xs ++ ys) ++ zs
+                    =⟨ cong (λ y → x :: y) (append-assoc xs ys zs) ⟩
+                        x :: xs ++ (ys ++ zs)
+                    =⟨⟩
+                        (x :: xs) ++ (ys ++ zs)
+                    end
+
+map-id : {A : Set} (xs : List A) → map id xs ≡ xs
+map-id [] =
+    begin
+        map id []
+    =⟨⟩ -- applying map
+        []
+    end
+map-id (x :: xs) =
+    begin
+        map id (x :: xs)
+    =⟨⟩ -- applying map
+        id x :: map id xs
+    =⟨⟩ -- applying id
+        x :: map id xs
+    =⟨ cong (x ::_) (map-id xs) ⟩ -- using induction hypothesis
+        x :: xs
+    end
+
+_◦_ : {A B C : Set} → (B → C) → (A → B) → (A → C)
+g ◦ h = λ x → g (h x)
+
+map-compose : {A B C : Set} (f : B → C) (g : A → B) (xs : List A)
+    → map (f ◦ g) xs ≡ map f (map g xs)
+map-compose f g [] =
+    begin
+        map (f ◦ g) []
+    =⟨⟩ -- applying map
+        []
+    =⟨⟩ -- unapplying map
+        map f []
+    =⟨⟩ -- unapplying map
+        map f (map g [])
+    end
+map-compose f g (x :: xs) =
+    begin
+        map (f ◦ g) (x :: xs)
+    =⟨⟩ -- applying map
+        (f ◦ g) x :: map (f ◦ g) xs
+    =⟨⟩ -- applying function composition
+        f (g x) :: map (f ◦ g) xs
+    =⟨ cong (f (g x) ::_) (map-compose f g xs) ⟩ -- using induction hypothesis
+        f (g x) :: map f (map g xs)
+    =⟨⟩ -- unapplying map
+        map f (g x :: map g xs)
+    =⟨⟩ -- unapplying map
+        map f (map g (x :: xs))
+    end
+
+map-length-invariant : {A B : Set} → (f : A → B) → (xs : List A) → length (map f xs) ≡ length xs
+map-length-invariant f [] =
+    begin
+        length (map f [])
+    end
+map-length-invariant f (x :: xs) =
+    begin
+        length (map f (x :: xs))
+    =⟨⟩
+        length (f x :: map f xs)
+    =⟨⟩
+        1 + length (map f xs)
+    =⟨ cong (1 +_) (map-length-invariant f xs) ⟩
+        1 + length xs
+    =⟨⟩
+        length (x :: xs)
+    end
+

@@ -212,3 +212,97 @@ proof85 f = f tt
 
 proof9 : {P : Set} → (Either P (P → ⊥) → ⊥) → ⊥
 proof9 f = f (right (λ p → f (left p))) 
+
+data IsEven : Nat → Set where
+    zeroIsEven : IsEven zero
+    sucsucIsEven : {n : Nat} → IsEven n → IsEven (suc (suc n))
+
+6-is-even : IsEven 6
+6-is-even = sucsucIsEven(sucsucIsEven(sucsucIsEven zeroIsEven))
+
+7-is-not-even : IsEven 7 → ⊥
+7-is-not-even (sucsucIsEven(sucsucIsEven(sucsucIsEven())))
+
+data IsTrue : Bool → Set where
+    TrueIsTrue : IsTrue true
+
+_=Nat_ : Nat → Nat → Bool
+zero    =Nat zero    = true
+(suc x) =Nat (suc y) = x =Nat y
+_       =Nat _       = false
+
+length-is-3 : IsTrue(length (1 :: 2 :: 3 :: []) =Nat 3)
+length-is-3 = TrueIsTrue
+
+double : Nat → Nat
+double zero     = zero
+double (suc n)  = suc (suc (double n))
+
+double-is-even : (n : Nat) → IsEven(double n)
+double-is-even zero     = zeroIsEven
+double-is-even (suc m)  = sucsucIsEven (double-is-even m)
+
+n-equals-n : (n : Nat) → IsTrue (n =Nat n)
+n-equals-n zero     = TrueIsTrue
+n-equals-n (suc m)  = n-equals-n m
+
+data _≡_ {A : Set} : A → A → Set where
+    refl : {x : A} → x ≡ x
+    
+infix 4 _≡_
+
+one-plus-one : 1 + 1 ≡ 2
+one-plus-one = refl
+
+zero-not-one : 0 ≡ 1 → ⊥
+zero-not-one ()
+
+id-returns-input : {A : Set} → (x : A) → id x ≡ x
+id-returns-input x = refl
+
+sym : {A : Set} {x y : A} → x ≡ y → y ≡ x
+sym refl = refl
+
+trans : {A : Set} {x y z : A} → x ≡ y → y ≡ z → x ≡ z
+trans refl refl = refl
+
+cong : {A B : Set} {x y : A} → (f : A → B) → x ≡ y → f x ≡ f y
+cong f refl = refl
+
+begin_ : {A : Set} → {x y : A} → x ≡ y → x ≡ y
+begin p = p
+
+_end : {A : Set} → (x : A) → x ≡ x
+x end = refl
+
+_=⟨_⟩_ : {A : Set} → (x : A) → {y z : A}
+    → x ≡ y → y ≡ z → x ≡ z
+x =⟨ p ⟩ q = trans p q
+
+_=⟨⟩_ : {A : Set} → (x : A) → {y : A} → x ≡ y → x ≡ y
+x =⟨⟩ q = x =⟨ refl ⟩ q
+
+infix 1 begin_
+infix 3 _end
+infixr 2 _=⟨_⟩_
+infixr 2 _=⟨⟩_
+
+[_] : {A : Set} → A → List A
+[ x ] = x :: []
+
+reverse : {A : Set} → List A → List A
+reverse []      = []
+reverse (x :: xs) = reverse xs ++ [ x ]
+
+reverse-singleton : {A : Set} (x : A) → reverse [ x ] ≡ [ x ]
+reverse-singleton x =
+    begin
+        reverse [ x ]
+    =⟨⟩
+        reverse [] ++ [ x ]
+    =⟨⟩
+        [] ++ [ x ]
+    =⟨⟩
+        [ x ]
+    end
+
